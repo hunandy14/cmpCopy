@@ -4,7 +4,7 @@ function FormatTimes {
         [Parameter(Position = 0, ParameterSetName = "", Mandatory=$false)]
         [double] $Time=0,
         [Parameter(Position = 1, ParameterSetName = "", Mandatory=$false)]
-        [double] $Digit=1
+        [double] $Digit=3
     )
     # 設定單位
     $Unit_Type = 'ms'
@@ -40,8 +40,7 @@ function cmpCopy {
         if (!(Test-Path -PathType:Container $TempPath)) { (mkdir $TempPath -Force)|Out-Null }
     }
     $zip     = 'Copy-Temp.zip'
-    $zipPath = "$TempPath\cmpCopy"
-    if (!(Test-Path -PathType:Container $zipPath)) { (mkdir $zipPath -Force)|Out-Null }
+    $zipPath = $env:TEMP
     $zipFullName = "$zipPath\$zip"
     # 建立資料夾
  
@@ -59,9 +58,9 @@ function cmpCopy {
 
     # 輸出紀錄
     Write-Host "所有檔案已經複製完畢"
-    Write-Host "  從位置: " -NoNewline
+    Write-Host "  來源: " -NoNewline
     Write-Host $Path -ForegroundColor:Yellow
-    Write-Host "  複製到: " -NoNewline
+    Write-Host "  目標: " -NoNewline
     Write-Host $Destination -ForegroundColor:Yellow
     
     if ($Log) {
@@ -85,22 +84,30 @@ function __TestCopyTime__ {
     $srcPath = 'R:\pwshApp\autoFixEFI'
     # $srcPath = 'R:\SampleFile'
     $ramPath = 'R:\TestCopyTime'
-    $hddPath = "$env:temp\TestCopyTime"
-    # $nasPath = '\\CHARLOTTE-LT\public\TestCopyTime'
+    $ssdPath = "$env:temp\TestCopyTime"
+    $hddPath = "E:\TestCopyTime"
+    $nasPath = '\\CHARLOTTE-LT\public\TestCopyTime'
 
     if ($ramPath) {
-    Write-Host 'Test Ram2Ram'
+        Write-Host '========================== Test Ram2Ram ==========================' -ForegroundColor:Cyan
         cmpCopy $srcPath $ramPath -Log
         cmpCopy $srcPath $ramPath -Log -NormalCopy
     }
+    if ($ssdPath) {
+        Write-Host '========================== Test Ram2SSD ==========================' -ForegroundColor:Cyan
+        cmpCopy $srcPath $ssdPath -Log
+        cmpCopy $srcPath $ssdPath -Log -NormalCopy
+    }
     if ($hddPath) {
-        Write-Host 'Test Ram2HDD'
+        Write-Host '========================== Test Ram2HDD ==========================' -ForegroundColor:Cyan
         cmpCopy $srcPath $hddPath -Log
         cmpCopy $srcPath $hddPath -Log -NormalCopy
     }
     if ($nasPath) {
-        Write-Host 'Test Ram2NAS'
+        Write-Host '========================== Test Ram2NAS ==========================' -ForegroundColor:Cyan
         cmpCopy $srcPath $nasPath -Log
         cmpCopy $srcPath $nasPath -Log -NormalCopy
     }
-} # __TestCopyTime__
+    Write-Host ""
+} __TestCopyTime__
+
