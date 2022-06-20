@@ -81,8 +81,9 @@ function cmpCopy {
 
 # 測試複製時間函式
 function __TestCopyTime__ {
-    $srcPath = 'R:\pwshApp\autoFixEFI'
+    $srcPath = 'autoFixEFI'
     # $srcPath = 'R:\SampleFile'
+    
     $ramPath = 'R:\TestCopyTime'
     $ssdPath = "$env:temp\TestCopyTime"
     $hddPath = "E:\TestCopyTime"
@@ -109,5 +110,5 @@ function __TestCopyTime__ {
         cmpCopy $srcPath $nasPath -Log -NormalCopy
     }
     Write-Host ""
-} __TestCopyTime__
+} # __TestCopyTime__
 
