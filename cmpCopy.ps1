@@ -25,15 +25,23 @@ function FormatTimes {
 
 function cmpCopy {
     param (
+        [Parameter(Position = 0, ParameterSetName = "", Mandatory)]
         [string] $Path,
+        [Parameter(Position = 1, ParameterSetName = "", Mandatory)]
         [string] $Destination,
         # [string] $TempPath,
         # [switch] $7z,
-        [switch] $Log,
-        [switch] $NormalCopy
+        [Parameter(ParameterSetName = "NormalCopy")]
+        [switch] $NormalCopy,
+        [Parameter(ParameterSetName = "CompCopy")]
+        [switch] $CompCopy,
+        [Parameter(ParameterSetName = "RoboCopy")]
+        [switch] $RoboCopy,
+        [switch] $Log
     )
     # 驗證
     if (!(Test-Path -PathType:Container $Path)) { Write-Host "[錯誤]:: Path路徑輸入錯誤" -ForegroundColor:Yellow ;return }
+    $Path = [System.IO.Path]::GetFullPath($Path)
     # 設置
     if (!$TempPath) {
         $TempPath = "$env:TEMP\cmpCopy"
@@ -48,7 +56,10 @@ function cmpCopy {
     $stopwatch = [system.diagnostics.stopwatch]::StartNew()
     if ($NormalCopy) {
         Copy-Item $Path $Destination -Recurse -Force
-    } else {
+    } elseif ($RoboCopy) {
+        $destPath = $Destination+$Path.Substring($Path.LastIndexOf('\'), $Path.Length-$Path.LastIndexOf('\'))
+        (Robocopy.exe $Path $destPath /e /mt:128)|Out-Null
+    } elseif($CompCopy) {
         if (!(Test-Path -PathType:Leaf $zipFullName)) { $forceCompress = $false } else { $forceCompress = $true }
         Compress-Archive -CompressionLevel:Fastest $Path $zipFullName -Force:$forceCompress
         [double] $cmpTime = $stopwatch.ElapsedMilliseconds
@@ -57,17 +68,20 @@ function cmpCopy {
     [double] $time = $stopwatch.ElapsedMilliseconds
 
     # 輸出紀錄
-    Write-Host "所有檔案已經複製完畢"
-    Write-Host "  來源: " -NoNewline
-    Write-Host $Path -ForegroundColor:Yellow
-    Write-Host "  目標: " -NoNewline
-    Write-Host $Destination -ForegroundColor:Yellow
+    # Write-Host "所有檔案已經複製完畢"
+    # Write-Host "  來源: " -NoNewline
+    # Write-Host $Path -ForegroundColor:Yellow
+    # Write-Host "  目標: " -NoNewline
+    # Write-Host $Destination -ForegroundColor:Yellow
     
     if ($Log) {
         if ($NormalCopy) {
             Write-Host "    常規複製:: " -NoNewline
             Write-Host (FormatTimes $time) -ForegroundColor:Yellow
-        } else {
+        } elseif($RoboCopy) {
+            Write-Host "    多核複製:: " -NoNewline
+            Write-Host (FormatTimes $time) -ForegroundColor:Yellow
+        } elseif($CompCopy) {
             Write-Host "    壓解複製:: " -NoNewline
             Write-Host (FormatTimes $time) -NoNewline -ForegroundColor:Yellow
             Write-Host " (壓縮: " -NoNewline
@@ -79,36 +93,34 @@ function cmpCopy {
     }
 }
 
+
+
+function __TestCopyTimeCore__($srcPath, $destPath, $Name) {
+    if ($destPath){
+        Write-Host "========================== $Name ==========================" -ForegroundColor:Cyan
+        cmpCopy $srcPath $destPath -Log -RoboCopy
+        cmpCopy $srcPath $destPath -Log -CompCopy
+        # cmpCopy $srcPath $destPath -Log -NormalCopy
+    }
+}
+
 # 測試複製時間函式
 function __TestCopyTime__ {
     $srcPath = 'autoFixEFI'
     # $srcPath = 'R:\SampleFile'
     
     $ramPath = 'R:\TestCopyTime'
-    $ssdPath = "$env:temp\TestCopyTime"
-    $hddPath = "E:\TestCopyTime"
-    $nasPath = '\\CHARLOTTE-LT\public\TestCopyTime'
+    # $ssdPath = "$env:temp\TestCopyTime"
+    # $hddPath = "E:\TestCopyTime"
+    # $nasPath = '\\CHARLOTTE-LT\public\TestCopyTime'
 
-    if ($ramPath) {
-        Write-Host '========================== Test Ram2Ram ==========================' -ForegroundColor:Cyan
-        cmpCopy $srcPath $ramPath -Log
-        cmpCopy $srcPath $ramPath -Log -NormalCopy
-    }
-    if ($ssdPath) {
-        Write-Host '========================== Test Ram2SSD ==========================' -ForegroundColor:Cyan
-        cmpCopy $srcPath $ssdPath -Log
-        cmpCopy $srcPath $ssdPath -Log -NormalCopy
-    }
-    if ($hddPath) {
-        Write-Host '========================== Test Ram2HDD ==========================' -ForegroundColor:Cyan
-        cmpCopy $srcPath $hddPath -Log
-        cmpCopy $srcPath $hddPath -Log -NormalCopy
-    }
-    if ($nasPath) {
-        Write-Host '========================== Test Ram2NAS ==========================' -ForegroundColor:Cyan
-        cmpCopy $srcPath $nasPath -Log
-        cmpCopy $srcPath $nasPath -Log -NormalCopy
-    }
+    __TestCopyTimeCore__ $srcPath $ramPath "Test Ram->Ram"
+    __TestCopyTimeCore__ $srcPath $ssdPath "Test Ram->SSD"
+    __TestCopyTimeCore__ $srcPath $hddPath "Test Ram->HSD"
+    __TestCopyTimeCore__ $srcPath $nasPath "Test Ram->NAS"
+    Write-Host "===================================================================" -ForegroundColor:Cyan
     Write-Host ""
-} # __TestCopyTime__
+    Write-Host ""
+    Write-Host ""
+} __TestCopyTime__
 
