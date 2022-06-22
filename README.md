@@ -20,10 +20,12 @@ irm bit.ly/3HzGYLr|iex; cmpCopy -NormalCopy -Log $srcPath $dstPath
 ### 測試結果
 
 ```ps1
+function f {
 irm bit.ly/3HzGYLr|iex;
 $srcPath = 'R:\pwshApp'
 $dstPath = 'R:\copy\TestCopyTime'
 __TestCopyTimeCore__ $srcPath $dstPath "Test to $dstPath"
+} f
 ```
 
 ![](img/Cover.png)
