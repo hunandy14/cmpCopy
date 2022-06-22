@@ -31,12 +31,14 @@ function cmpCopy {
         [string] $Destination,
         # [string] $TempPath,
         # [switch] $7z,
-        [Parameter(ParameterSetName = "NormalCopy")]
-        [switch] $NormalCopy,
         [Parameter(ParameterSetName = "CompCopy")]
         [switch] $CompCopy,
         [Parameter(ParameterSetName = "RoboCopy")]
         [switch] $RoboCopy,
+        [Parameter(ParameterSetName = "TeraCopy")]
+        [switch] $TeraCopy,
+        [Parameter(ParameterSetName = "NormalCopy")]
+        [switch] $NormalCopy,
         [switch] $Log
     )
     # 驗證
@@ -51,14 +53,20 @@ function cmpCopy {
     $zipPath = $env:TEMP
     $zipFullName = "$zipPath\$zip"
     # 建立資料夾
- 
+    $destPath = $Destination+$Path.Substring($Path.LastIndexOf('\'), $Path.Length-$Path.LastIndexOf('\'))
+    if (!(Test-Path -PathType:Container $destPath)) { (mkdir $destPath -Force)|Out-Null }
+    
     # 複製檔案
     $stopwatch = [system.diagnostics.stopwatch]::StartNew()
     if ($NormalCopy) {
         Copy-Item $Path $Destination -Recurse -Force
     } elseif ($RoboCopy) {
-        $destPath = $Destination+$Path.Substring($Path.LastIndexOf('\'), $Path.Length-$Path.LastIndexOf('\'))
-        (Robocopy.exe $Path $destPath /e /mt:128)|Out-Null
+        (Robocopy.exe $Path $destPath /e /mt:16)|Out-Null
+    } elseif ($TeraCopy) {
+        (TeraCopy.exe copy $Path $destPath /OverwriteOlder /NoClose)|Out-Null
+        # $job = Start-Job { (TeraCopy.exe copy $Path $destPath /OverwriteOlder) }
+        # Wait-Job $job
+        # Receive-Job $job
     } elseif($CompCopy) {
         if (!(Test-Path -PathType:Leaf $zipFullName)) { $forceCompress = $false } else { $forceCompress = $true }
         Compress-Archive -CompressionLevel:Fastest $Path $zipFullName -Force:$forceCompress
@@ -76,13 +84,16 @@ function cmpCopy {
     
     if ($Log) {
         if ($NormalCopy) {
-            Write-Host "    常規複製:: " -NoNewline
+            Write-Host "    常規複製(Copy):: " -NoNewline
             Write-Host (FormatTimes $time) -ForegroundColor:Yellow
         } elseif($RoboCopy) {
-            Write-Host "    多核複製:: " -NoNewline
+            Write-Host "    多核複製(Robo):: " -NoNewline
+            Write-Host (FormatTimes $time) -ForegroundColor:Yellow
+        } elseif($TeraCopy) {
+            Write-Host "    快速複製(Tera):: " -NoNewline
             Write-Host (FormatTimes $time) -ForegroundColor:Yellow
         } elseif($CompCopy) {
-            Write-Host "    壓解複製:: " -NoNewline
+            Write-Host "    壓解複製( Zip):: " -NoNewline
             Write-Host (FormatTimes $time) -NoNewline -ForegroundColor:Yellow
             Write-Host " (壓縮: " -NoNewline
             Write-Host (FormatTimes $cmpTime) -NoNewline
@@ -98,29 +109,39 @@ function cmpCopy {
 function __TestCopyTimeCore__($srcPath, $destPath, $Name) {
     if ($destPath){
         Write-Host "========================== $Name ==========================" -ForegroundColor:Cyan
-        cmpCopy $srcPath $destPath -Log -RoboCopy
-        cmpCopy $srcPath $destPath -Log -CompCopy
-        # cmpCopy $srcPath $destPath -Log -NormalCopy
+        cmpCopy $srcPath "$destPath-0" -Log -RoboCopy
+        cmpCopy $srcPath "$destPath-2" -Log -CompCopy
+        cmpCopy $srcPath "$destPath-3" -Log -NormalCopy
+        # cmpCopy $srcPath "$destPath-1" -Log -TeraCopy
     }
 }
 
 # 測試複製時間函式
 function __TestCopyTime__ {
-    $srcPath = 'autoFixEFI'
+    param(
+        
+    )
+    
+    addPath "C:\Program Files\TeraCopy"
+    # $srcPath = 'autoFixEFI'
+    # $srcPath = 'R:\autoFixEFI'
+    $srcPath = 'R:\pwshApp'
     # $srcPath = 'R:\SampleFile'
     
-    $ramPath = 'R:\TestCopyTime'
-    # $ssdPath = "$env:temp\TestCopyTime"
+    $ramPath = 'R:\copy\TestCopyTime'
+    # $ssdPath1 = "$env:temp\TestCopyTime"
+    # $ssdPath1 = "$env:temp\TestCopyTime4"
+    # $ssdPath2 = "D:\TestCopyTime"
     # $hddPath = "E:\TestCopyTime"
     # $nasPath = '\\CHARLOTTE-LT\public\TestCopyTime'
 
     __TestCopyTimeCore__ $srcPath $ramPath "Test Ram->Ram"
-    __TestCopyTimeCore__ $srcPath $ssdPath "Test Ram->SSD"
-    __TestCopyTimeCore__ $srcPath $hddPath "Test Ram->HSD"
+    __TestCopyTimeCore__ $srcPath $ssdPath1 "Test Ram->SSD(gen4)"
+    __TestCopyTimeCore__ $srcPath $ssdPath2 "Test Ram->SSD(sata)"
+    __TestCopyTimeCore__ $srcPath $hddPath "Test Ram->HDD"
     __TestCopyTimeCore__ $srcPath $nasPath "Test Ram->NAS"
     Write-Host "===================================================================" -ForegroundColor:Cyan
     Write-Host ""
     Write-Host ""
     Write-Host ""
 } __TestCopyTime__
-
