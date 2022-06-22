@@ -144,4 +144,4 @@ function __TestCopyTime__ {
     Write-Host ""
     Write-Host ""
     Write-Host ""
-} __TestCopyTime__
+} # __TestCopyTime__
