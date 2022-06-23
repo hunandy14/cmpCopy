@@ -46,7 +46,7 @@ function cmpCopy {
     $Path = [System.IO.Path]::GetFullPath($Path)
     # 確認7z環境
     $7zPATH = "${env:ProgramFiles}\7-Zip"
-    if (!(Test-Path $7zPATH)) {
+    if (!(Test-Path "$7zPATH\7z.exe")) {
         $cmd = "Set-ExecutionPolicy Bypass -S:Process -F; irm chocolatey.org/install.ps1|iex; choco install -y 7zip"
         Write-Host "偵測到沒有安裝7z, 複製並執行下列代碼快速安裝"
         Write-Host $cmd -ForegroundColor:Yellow
