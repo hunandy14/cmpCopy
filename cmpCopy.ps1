@@ -44,13 +44,21 @@ function cmpCopy {
     # 驗證
     if (!(Test-Path -PathType:Container $Path)) { Write-Host "[錯誤]:: Path路徑輸入錯誤" -ForegroundColor:Yellow ;return }
     $Path = [System.IO.Path]::GetFullPath($Path)
+    # 確認7z環境
+    $7zPATH = "${env:ProgramFiles}\7-Zip"
+    if (!(Test-Path $7zPATH)) {
+        Set-ExecutionPolicy Bypass -S:Process -F
+        Invoke-RestMethod chocolatey.org/install.ps1|Invoke-Expression
+        choco install -y 7zip
+    } $env:Path = "${env:Path};$7zPATH"
     # 設置
     if (!$TempPath) {
         $TempPath = "$env:TEMP\cmpCopy"
         if (!(Test-Path -PathType:Container $TempPath)) { (mkdir $TempPath -Force)|Out-Null }
     }
-    $zip     = 'Copy-Temp.zip'
-    $zipPath = $env:TEMP
+    $pathIdx = $Path.LastIndexOf('\')
+    $zip     = $Path.Substring($pathIdx+1, ($Path.Length)-$pathIdx-1)+'.zip'
+    $zipPath = $Path.Substring(0, $pathIdx)
     $zipFullName = "$zipPath\$zip"
     # 建立資料夾
     $destPath = $Destination+$Path.Substring($Path.LastIndexOf('\'), $Path.Length-$Path.LastIndexOf('\'))
@@ -69,9 +77,11 @@ function cmpCopy {
         # Receive-Job $job
     } elseif($CompCopy) {
         if (!(Test-Path -PathType:Leaf $zipFullName)) { $forceCompress = $false } else { $forceCompress = $true }
-        Compress-Archive -CompressionLevel:Fastest $Path $zipFullName -Force:$forceCompress
+        # Compress-Archive -CompressionLevel:Fastest $Path $zipFullName -Force:$forceCompress
+        (7z.exe a $zipFullName $Path -mx=3)|Out-Null
         [double] $cmpTime = $stopwatch.ElapsedMilliseconds
-        Expand-Archive $zipFullName $Destination -Force
+        # Expand-Archive $zipFullName $Destination -Force
+        (7z.exe x "$zipFullName" -o"$Destination" -aoa)|Out-Null
     }
     [double] $time = $stopwatch.ElapsedMilliseconds
 
@@ -122,18 +132,18 @@ function __TestCopyTime__ {
         
     )
     
-    addPath "C:\Program Files\TeraCopy"
+    # addPath "C:\Program Files\TeraCopy"
     # $srcPath = 'autoFixEFI'
     # $srcPath = 'R:\autoFixEFI'
     $srcPath = 'R:\pwshApp'
     # $srcPath = 'R:\SampleFile'
     
-    $ramPath = 'R:\copy\TestCopyTime'
+    $ramPath = 'R:\temp\TestCopyTime'
     # $ssdPath1 = "$env:temp\TestCopyTime"
     # $ssdPath1 = "$env:temp\TestCopyTime4"
     # $ssdPath2 = "D:\TestCopyTime"
     # $hddPath = "E:\TestCopyTime"
-    # $nasPath = '\\CHARLOTTE-LT\public\TestCopyTime'
+    # $nasPath = '\\CHARLOTTE-LT\public\temp\TestCopyTime'
 
     __TestCopyTimeCore__ $srcPath $ramPath "Test Ram->Ram"
     __TestCopyTimeCore__ $srcPath $ssdPath1 "Test Ram->SSD(gen4)"
