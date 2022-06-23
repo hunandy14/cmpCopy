@@ -49,10 +49,11 @@ __TestCopyTimeCore__ $srcPath $nasPath "Test Ram->NAS"
 ```ps1
 function TestCopyTime {
     irm bit.ly/3HzGYLr|iex;
-    $srcPath = 'I:\copyTest\pwshApp'
-    $dstPath = 'C:\Users\hunan\Desktop\copy\tempDir\test'
-    __TestCopyTimeCore__ $srcPath $dstPath "Test to $dstPath"
-    $dstPath = '\\192.168.2.10\Download\copyTest\tempDir\test'
-    __TestCopyTimeCore__ $srcPath $dstPath "Test to $dstPath"
+    $currDir = Get-Location
+    $srcPath = "$currDir\pwshApp"
+    $dstPath = "$currDir\temp\test1"
+    __TestCopyTimeCore__ $srcPath $dstPath "Copy to $dstPath"
+    # $dstPath = '\\192.168.2.10\Download\copyTest\tempDir\test'
+    # __TestCopyTimeCore__ $srcPath $dstPath "Copy to $dstPath"
 } TestCopyTime
 ```
