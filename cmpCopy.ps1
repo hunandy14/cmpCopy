@@ -1,4 +1,4 @@
-# æ ¼å¼åŒ–æ™‚é–“å–®ä½
+# ®æ¦¡¤Æ®É¶¡³æ¦ì
 function FormatTimes {
     param (
         [Parameter(Position = 0, ParameterSetName = "", Mandatory=$false)]
@@ -6,9 +6,9 @@ function FormatTimes {
         [Parameter(Position = 1, ParameterSetName = "", Mandatory=$false)]
         [double] $Digit=3
     )
-    # è¨­å®šå–®ä½
+    # ³]©w³æ¦ì
     $Unit_Type = 'ms'
-    # é–‹å§‹æ›ç®—
+    # ¶}©l´«ºâ
     if (([Math]::Floor($Time)|Measure-Object -Character).Characters -gt 3) {
         $Time = $Time/1000.0; $Unit_Type = 's'
     } if (([Math]::Floor($Time)|Measure-Object -Character).Characters -gt 3) {
@@ -41,36 +41,47 @@ function cmpCopy {
         [switch] $NormalCopy,
         [switch] $Log
     )
-    # é©—è­‰
-    if (!(Test-Path -PathType:Container $Path)) { Write-Host "[éŒ¯èª¤]:: Pathè·¯å¾‘è¼¸å…¥éŒ¯èª¤" -ForegroundColor:Yellow ;return }
+    # ÅçÃÒ
+    if (!(Test-Path -PathType:Container $Path)) { Write-Host "[¿ù»~]:: Path¸ô®|¿é¤J¿ù»~" -ForegroundColor:Yellow ;return }
     $Path = [System.IO.Path]::GetFullPath($Path)
-    # ç¢ºèª7zç’°å¢ƒ
+    # ½T»{7zÀô¹Ò
+    $rarPATH = "${env:ProgramFiles}\WinRAR"
     $7zPATH = "${env:ProgramFiles}\7-Zip"
-    if (!(Test-Path "$7zPATH\7z.exe")) {
+    
+    if ((Test-Path "$rarPATH\rar.exe")) {
+        $env:Path = "${env:Path};$rarPATH"
+        $CompType='rar'
+    } elseif((Test-Path "$7zPATH\7z.exe")) {
+        $env:Path = "${env:Path};$7zPATH"
+        $CompType='zip'
+    } else {
         $cmd = "Set-ExecutionPolicy Bypass -S:Process -F; irm chocolatey.org/install.ps1|iex; choco install -y 7zip"
-        Write-Host "åµæ¸¬åˆ°æ²’æœ‰å®‰è£7z, è¤‡è£½ä¸¦åŸ·è¡Œä¸‹åˆ—ä»£ç¢¼å¿«é€Ÿå®‰è£"
+        Write-Host "°»´ú¨ì¨S¦³¦w¸Ë¸ÑÀ£ÁY³nÅé, ½Æ»s¨Ã°õ¦æ¤U¦C¥N½X§Ö³t¦w¸Ë7z"
         Write-Host $cmd -ForegroundColor:Yellow
         return;
-    } else { $env:Path = "${env:Path};$7zPATH" }
-    # è¨­ç½®
+    }
+    
+    # ³]¸m
     if (!$TempPath) {
         $TempPath = "$env:TEMP\cmpCopy"
         if (!(Test-Path -PathType:Container $TempPath)) { (mkdir $TempPath -Force)|Out-Null }
     }
+    # $CompType='rar'
+    # $CompType='zip'
     $pathIdx = $Path.LastIndexOf('\')
-    $zip     = $Path.Substring($pathIdx+1, ($Path.Length)-$pathIdx-1)+'.zip'
+    $zip     = $Path.Substring($pathIdx+1, ($Path.Length)-$pathIdx-1) + ".$CompType"
     $zipPath = $Path.Substring(0, $pathIdx)
     $zipFullName = "$zipPath\$zip"
-    # å»ºç«‹è³‡æ–™å¤¾
+    # «Ø¥ß¸ê®Æ§¨
     $destPath = $Destination+$Path.Substring($Path.LastIndexOf('\'), $Path.Length-$Path.LastIndexOf('\'))
     if (!(Test-Path -PathType:Container $destPath)) { (mkdir $destPath -Force)|Out-Null }
     
-    # è¤‡è£½æª”æ¡ˆ
+    # ½Æ»sÀÉ®×
     $stopwatch = [system.diagnostics.stopwatch]::StartNew()
     if ($NormalCopy) {
         Copy-Item $Path $Destination -Recurse -Force
     } elseif ($RoboCopy) {
-        (Robocopy.exe $Path $destPath /e /mt:16)|Out-Null
+        (Robocopy.exe $Path $destPath /e /mt:128)|Out-Null
     } elseif ($TeraCopy) {
         (TeraCopy.exe copy $Path $destPath /OverwriteOlder /NoClose)|Out-Null
         # $job = Start-Job { (TeraCopy.exe copy $Path $destPath /OverwriteOlder) }
@@ -78,37 +89,49 @@ function cmpCopy {
         # Receive-Job $job
     } elseif($CompCopy) {
         if (!(Test-Path -PathType:Leaf $zipFullName)) { $forceCompress = $false } else { $forceCompress = $true }
+        
         # Compress-Archive -CompressionLevel:Fastest $Path $zipFullName -Force:$forceCompress
-        (7z.exe a $zipFullName $Path -mx=3)|Out-Null
+        if ($CompType -eq 'zip') {
+            (7z.exe a $zipFullName $Path -mx=0)|Out-Null
+        }
+        if ($CompType -eq 'rar') {
+            (rar.exe a $zipFullName $Path -m0)|Out-Null
+        }
+            
         [double] $cmpTime = $stopwatch.ElapsedMilliseconds
+        
         # Expand-Archive $zipFullName $Destination -Force
-        (7z.exe x "$zipFullName" -o"$Destination" -aoa)|Out-Null
+        if ($CompType -eq 'zip') {
+            (7z.exe x "$zipFullName" -o"$Destination" -aoa)|Out-Null
+        } if ($CompType -eq 'rar'){
+            (rar.exe x $zipFullName $Destination -y)|Out-Null
+        }
     }
     [double] $time = $stopwatch.ElapsedMilliseconds
 
-    # è¼¸å‡ºç´€éŒ„
-    # Write-Host "æ‰€æœ‰æª”æ¡ˆå·²ç¶“è¤‡è£½å®Œç•¢"
-    # Write-Host "  ä¾†æº: " -NoNewline
+    # ¿é¥X¬ö¿ý
+    # Write-Host "©Ò¦³ÀÉ®×¤w¸g½Æ»s§¹²¦"
+    # Write-Host "  ¨Ó·½: " -NoNewline
     # Write-Host $Path -ForegroundColor:Yellow
-    # Write-Host "  ç›®æ¨™: " -NoNewline
+    # Write-Host "  ¥Ø¼Ð: " -NoNewline
     # Write-Host $Destination -ForegroundColor:Yellow
     
     if ($Log) {
         if ($NormalCopy) {
-            Write-Host "    å¸¸è¦è¤‡è£½(Copy):: " -NoNewline
+            Write-Host "    ±`³W½Æ»s(Copy):: " -NoNewline
             Write-Host (FormatTimes $time) -ForegroundColor:Yellow
         } elseif($RoboCopy) {
-            Write-Host "    å¤šæ ¸è¤‡è£½(Robo):: " -NoNewline
+            Write-Host "    ¦h®Ö½Æ»s(Robo):: " -NoNewline
             Write-Host (FormatTimes $time) -ForegroundColor:Yellow
         } elseif($TeraCopy) {
-            Write-Host "    å¿«é€Ÿè¤‡è£½(Tera):: " -NoNewline
+            Write-Host "    §Ö³t½Æ»s(Tera):: " -NoNewline
             Write-Host (FormatTimes $time) -ForegroundColor:Yellow
         } elseif($CompCopy) {
-            Write-Host "    å£“è§£è¤‡è£½( Zip):: " -NoNewline
+            Write-Host "    À£¸Ñ½Æ»s( Zip):: " -NoNewline
             Write-Host (FormatTimes $time) -NoNewline -ForegroundColor:Yellow
-            Write-Host " (å£“ç¸®: " -NoNewline
+            Write-Host " (À£ÁY: " -NoNewline
             Write-Host (FormatTimes $cmpTime) -NoNewline
-            Write-Host " , è§£å£“: " -NoNewline
+            Write-Host " , ¸ÑÀ£: " -NoNewline
             Write-Host (FormatTimes ($time-$cmpTime)) -NoNewline
             Write-Host ")"
         }
@@ -121,13 +144,13 @@ function __TestCopyTimeCore__($srcPath, $destPath, $Name) {
     if ($destPath){
         Write-Host "========================== $Name ==========================" -ForegroundColor:Cyan
         cmpCopy $srcPath "$destPath-0" -Log -RoboCopy
-        cmpCopy $srcPath "$destPath-2" -Log -CompCopy
-        cmpCopy $srcPath "$destPath-3" -Log -NormalCopy
+        # cmpCopy $srcPath "$destPath-2" -Log -CompCopy
+        # cmpCopy $srcPath "$destPath-3" -Log -NormalCopy
         # cmpCopy $srcPath "$destPath-1" -Log -TeraCopy
     }
 }
 
-# æ¸¬è©¦è¤‡è£½æ™‚é–“å‡½å¼
+# ´ú¸Õ½Æ»s®É¶¡¨ç¦¡
 function __TestCopyTime__ {
     param(
         
@@ -143,7 +166,7 @@ function __TestCopyTime__ {
     # $ssdPath1 = "$env:temp\TestCopyTime\test1"
     # $ssdPath2 = "D:\TestCopyTime\test1"
     # $hddPath = "E:\TestCopyTime\test1"
-    # $nasPath = '\\CHARLOTTE-LT\public\temp\TestCopyTime\test1'
+    # $nasPath = '\\CHARLOTTE-LT\public\TestCopyTime\temp\test3'
 
     __TestCopyTimeCore__ $srcPath $ramPath "Test Ram->Ram"
     __TestCopyTimeCore__ $srcPath $ssdPath1 "Test Ram->SSD(gen4)"
