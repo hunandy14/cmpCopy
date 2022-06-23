@@ -1,4 +1,4 @@
-# ®æ¦¡¤Æ®É¶¡³æ¦ì
+# æ ¼å¼åŒ–æ™‚é–“å–®ä½
 function FormatTimes {
     param (
         [Parameter(Position = 0, ParameterSetName = "", Mandatory=$false)]
@@ -6,9 +6,9 @@ function FormatTimes {
         [Parameter(Position = 1, ParameterSetName = "", Mandatory=$false)]
         [double] $Digit=3
     )
-    # ³]©w³æ¦ì
+    # è¨­å®šå–®ä½
     $Unit_Type = 'ms'
-    # ¶}©l´«ºâ
+    # é–‹å§‹æ›ç®—
     if (([Math]::Floor($Time)|Measure-Object -Character).Characters -gt 3) {
         $Time = $Time/1000.0; $Unit_Type = 's'
     } if (([Math]::Floor($Time)|Measure-Object -Character).Characters -gt 3) {
@@ -41,18 +41,18 @@ function cmpCopy {
         [switch] $NormalCopy,
         [switch] $Log
     )
-    # ÅçÃÒ
-    if (!(Test-Path -PathType:Container $Path)) { Write-Host "[¿ù»~]:: Path¸ô®|¿é¤J¿ù»~" -ForegroundColor:Yellow ;return }
+    # é©—è­‰
+    if (!(Test-Path -PathType:Container $Path)) { Write-Host "[éŒ¯èª¤]:: Pathè·¯å¾‘è¼¸å…¥éŒ¯èª¤" -ForegroundColor:Yellow ;return }
     $Path = [System.IO.Path]::GetFullPath($Path)
-    # ½T»{7zÀô¹Ò
+    # ç¢ºèª7zç’°å¢ƒ
     $7zPATH = "${env:ProgramFiles}\7-Zip"
     if (!(Test-Path "$7zPATH\7z.exe")) {
         $cmd = "Set-ExecutionPolicy Bypass -S:Process -F; irm chocolatey.org/install.ps1|iex; choco install -y 7zip"
-        Write-Host "°»´ú¨ì¨S¦³¦w¸Ë7z, ½Æ»s¨Ã°õ¦æ¤U¦C¥N½X§Ö³t¦w¸Ë"
+        Write-Host "åµæ¸¬åˆ°æ²’æœ‰å®‰è£7z, è¤‡è£½ä¸¦åŸ·è¡Œä¸‹åˆ—ä»£ç¢¼å¿«é€Ÿå®‰è£"
         Write-Host $cmd -ForegroundColor:Yellow
         return;
     } else { $env:Path = "${env:Path};$7zPATH" }
-    # ³]¸m
+    # è¨­ç½®
     if (!$TempPath) {
         $TempPath = "$env:TEMP\cmpCopy"
         if (!(Test-Path -PathType:Container $TempPath)) { (mkdir $TempPath -Force)|Out-Null }
@@ -61,11 +61,11 @@ function cmpCopy {
     $zip     = $Path.Substring($pathIdx+1, ($Path.Length)-$pathIdx-1)+'.zip'
     $zipPath = $Path.Substring(0, $pathIdx)
     $zipFullName = "$zipPath\$zip"
-    # «Ø¥ß¸ê®Æ§¨
+    # å»ºç«‹è³‡æ–™å¤¾
     $destPath = $Destination+$Path.Substring($Path.LastIndexOf('\'), $Path.Length-$Path.LastIndexOf('\'))
     if (!(Test-Path -PathType:Container $destPath)) { (mkdir $destPath -Force)|Out-Null }
     
-    # ½Æ»sÀÉ®×
+    # è¤‡è£½æª”æ¡ˆ
     $stopwatch = [system.diagnostics.stopwatch]::StartNew()
     if ($NormalCopy) {
         Copy-Item $Path $Destination -Recurse -Force
@@ -86,29 +86,29 @@ function cmpCopy {
     }
     [double] $time = $stopwatch.ElapsedMilliseconds
 
-    # ¿é¥X¬ö¿ı
-    # Write-Host "©Ò¦³ÀÉ®×¤w¸g½Æ»s§¹²¦"
-    # Write-Host "  ¨Ó·½: " -NoNewline
+    # è¼¸å‡ºç´€éŒ„
+    # Write-Host "æ‰€æœ‰æª”æ¡ˆå·²ç¶“è¤‡è£½å®Œç•¢"
+    # Write-Host "  ä¾†æº: " -NoNewline
     # Write-Host $Path -ForegroundColor:Yellow
-    # Write-Host "  ¥Ø¼Ğ: " -NoNewline
+    # Write-Host "  ç›®æ¨™: " -NoNewline
     # Write-Host $Destination -ForegroundColor:Yellow
     
     if ($Log) {
         if ($NormalCopy) {
-            Write-Host "    ±`³W½Æ»s(Copy):: " -NoNewline
+            Write-Host "    å¸¸è¦è¤‡è£½(Copy):: " -NoNewline
             Write-Host (FormatTimes $time) -ForegroundColor:Yellow
         } elseif($RoboCopy) {
-            Write-Host "    ¦h®Ö½Æ»s(Robo):: " -NoNewline
+            Write-Host "    å¤šæ ¸è¤‡è£½(Robo):: " -NoNewline
             Write-Host (FormatTimes $time) -ForegroundColor:Yellow
         } elseif($TeraCopy) {
-            Write-Host "    §Ö³t½Æ»s(Tera):: " -NoNewline
+            Write-Host "    å¿«é€Ÿè¤‡è£½(Tera):: " -NoNewline
             Write-Host (FormatTimes $time) -ForegroundColor:Yellow
         } elseif($CompCopy) {
-            Write-Host "    À£¸Ñ½Æ»s( Zip):: " -NoNewline
+            Write-Host "    å£“è§£è¤‡è£½( Zip):: " -NoNewline
             Write-Host (FormatTimes $time) -NoNewline -ForegroundColor:Yellow
-            Write-Host " (À£ÁY: " -NoNewline
+            Write-Host " (å£“ç¸®: " -NoNewline
             Write-Host (FormatTimes $cmpTime) -NoNewline
-            Write-Host " , ¸ÑÀ£: " -NoNewline
+            Write-Host " , è§£å£“: " -NoNewline
             Write-Host (FormatTimes ($time-$cmpTime)) -NoNewline
             Write-Host ")"
         }
@@ -127,7 +127,7 @@ function __TestCopyTimeCore__($srcPath, $destPath, $Name) {
     }
 }
 
-# ´ú¸Õ½Æ»s®É¶¡¨ç¦¡
+# æ¸¬è©¦è¤‡è£½æ™‚é–“å‡½å¼
 function __TestCopyTime__ {
     param(
         
