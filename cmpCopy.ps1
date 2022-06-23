@@ -144,8 +144,8 @@ function __TestCopyTimeCore__($srcPath, $destPath, $Name) {
     if ($destPath){
         Write-Host "========================== $Name ==========================" -ForegroundColor:Cyan
         cmpCopy $srcPath "$destPath-0" -Log -RoboCopy
-        # cmpCopy $srcPath "$destPath-2" -Log -CompCopy
-        # cmpCopy $srcPath "$destPath-3" -Log -NormalCopy
+        cmpCopy $srcPath "$destPath-2" -Log -CompCopy
+        cmpCopy $srcPath "$destPath-3" -Log -NormalCopy
         # cmpCopy $srcPath "$destPath-1" -Log -TeraCopy
     }
 }
