@@ -47,10 +47,11 @@ function cmpCopy {
     # 確認7z環境
     $7zPATH = "${env:ProgramFiles}\7-Zip"
     if (!(Test-Path $7zPATH)) {
-        Set-ExecutionPolicy Bypass -S:Process -F
-        Invoke-RestMethod chocolatey.org/install.ps1|Invoke-Expression
-        choco install -y 7zip
-    } $env:Path = "${env:Path};$7zPATH"
+        $cmd = "Set-ExecutionPolicy Bypass -S:Process -F; irm chocolatey.org/install.ps1|iex; choco install -y 7zip"
+        Write-Host "偵測到沒有安裝7z, 複製並執行下列代碼快速安裝"
+        Write-Host $cmd -ForegroundColor:Yellow
+        return;
+    } else { $env:Path = "${env:Path};$7zPATH" }
     # 設置
     if (!$TempPath) {
         $TempPath = "$env:TEMP\cmpCopy"
